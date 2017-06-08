@@ -167,7 +167,8 @@ static int elf_fdpic_fetch_phdrs(struct elf_fdpic_params *params,
 		if (phdr->p_type != PT_GNU_STACK)
 			continue;
 
-		if (phdr->p_flags & PF_X)
+		if (phdr->p_flags & PF_X &&
+		    !security_check_vmflags(VM_EXEC|VM_READ|VM_WRITE))
 			params->flags |= ELF_FDPIC_FLAG_EXEC_STACK;
 		else
 			params->flags |= ELF_FDPIC_FLAG_NOEXEC_STACK;
