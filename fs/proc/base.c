@@ -2550,6 +2550,40 @@ static const struct file_operations proc_pid_attr_operations = {
 	.llseek		= generic_file_llseek,
 };
 
+#ifdef CONFIG_SECURITY_SARA
+static const struct pid_entry sara_attr_dir_stuff[] = {
+	REG("wxprot", 0666, proc_pid_attr_operations),
+};
+
+static int proc_sara_attr_dir_readdir(struct file *file,
+				      struct dir_context *ctx)
+{
+	return proc_pident_readdir(file, ctx,
+				   sara_attr_dir_stuff,
+				   ARRAY_SIZE(sara_attr_dir_stuff));
+}
+
+static const struct file_operations proc_sara_attr_dir_ops = {
+	.read		= generic_read_dir,
+	.iterate_shared	= proc_sara_attr_dir_readdir,
+	.llseek		= generic_file_llseek,
+};
+
+static struct dentry *proc_sara_attr_dir_lookup(struct inode *dir,
+				struct dentry *dentry, unsigned int flags)
+{
+	return proc_pident_lookup(dir, dentry,
+				  sara_attr_dir_stuff,
+				  ARRAY_SIZE(sara_attr_dir_stuff));
+};
+
+static const struct inode_operations proc_sara_attr_dir_inode_ops = {
+	.lookup		= proc_sara_attr_dir_lookup,
+	.getattr	= pid_getattr,
+	.setattr	= proc_setattr,
+};
+#endif /* CONFIG_SECURITY_SARA */
+
 static const struct pid_entry attr_dir_stuff[] = {
 	REG("current",    S_IRUGO|S_IWUGO, proc_pid_attr_operations),
 	REG("prev",       S_IRUGO,	   proc_pid_attr_operations),
@@ -2557,6 +2591,10 @@ static const struct pid_entry attr_dir_stuff[] = {
 	REG("fscreate",   S_IRUGO|S_IWUGO, proc_pid_attr_operations),
 	REG("keycreate",  S_IRUGO|S_IWUGO, proc_pid_attr_operations),
 	REG("sockcreate", S_IRUGO|S_IWUGO, proc_pid_attr_operations),
+#ifdef CONFIG_SECURITY_SARA
+	DIR("sara", 0555, proc_sara_attr_dir_inode_ops,
+				proc_sara_attr_dir_ops),
+#endif
 };
 
 static int proc_attr_dir_readdir(struct file *file, struct dir_context *ctx)
