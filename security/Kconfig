@@ -237,6 +237,7 @@ source security/tomoyo/Kconfig
 source security/apparmor/Kconfig
 source security/loadpin/Kconfig
 source security/yama/Kconfig
+source security/sara/Kconfig
 
 source security/integrity/Kconfig
 
