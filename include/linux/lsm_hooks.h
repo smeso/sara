@@ -2075,5 +2075,10 @@ void __init loadpin_add_hooks(void);
 #else
 static inline void loadpin_add_hooks(void) { };
 #endif
+#ifdef CONFIG_SECURITY_SARA
+void __init sara_init(void);
+#else
+static inline void __init sara_init(void) { };
+#endif
 
 #endif /* ! __LINUX_LSM_HOOKS_H */
