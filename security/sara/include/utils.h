@@ -26,6 +26,17 @@ static inline void release_entry(struct kref *ref)
 	/* All work is done after the return from kref_put(). */
 }
 
+
+/*
+ * The following macros must be used to access S.A.R.A. configuration
+ * structures.
+ * They are thread-safe under the assumption that a configuration
+ * won't ever be deleted but just replaced using SARA_CONFIG_REPLACE,
+ * possibly using an empty configuration.
+ * i.e. every call to SARA_CONFIG_PUT *must* be preceded by a matching
+ * SARA_CONFIG_GET invocation.
+ */
+
 #define SARA_CONFIG_GET_RCU(DEST, CONFIG) do {	\
 	rcu_read_lock();			\
 	DEST = rcu_dereference(CONFIG);		\

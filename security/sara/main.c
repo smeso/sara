@@ -19,6 +19,7 @@
 #include "include/sara.h"
 #include "include/sara_data.h"
 #include "include/securityfs.h"
+#include "include/wxprot.h"
 
 static const int sara_version = SARA_VERSION;
 
@@ -95,6 +96,11 @@ void __init sara_init(void)
 
 	if (sara_data_init()) {
 		pr_crit("impossible to initialize creds.\n");
+		goto error;
+	}
+
+	if (sara_wxprot_init()) {
+		pr_crit("impossible to initialize WX protections.\n");
 		goto error;
 	}
 

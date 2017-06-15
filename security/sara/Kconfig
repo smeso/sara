@@ -38,3 +38,77 @@ config SECURITY_SARA_NO_RUNTIME_ENABLE
 
 	  If unsure, answer Y.
 
+config SECURITY_SARA_WXPROT
+	bool "WX Protection: W^X and W!->X protections"
+	depends on SECURITY_SARA
+	default y
+	help
+	  WX Protection aims to improve user-space programs security by applying:
+	    - W^X memory restriction
+	    - W!->X (once writable never executable) mprotect restriction
+	    - Executable MMAP prevention
+	  See Documentation/admin-guide/LSM/SARA.rst. for further information.
+
+	  If unsure, answer Y.
+
+choice
+	prompt "Default action for W^X and W!->X protections"
+	depends on SECURITY_SARA
+	depends on SECURITY_SARA_WXPROT
+	default SECURITY_SARA_WXPROT_DEFAULT_FLAGS_ALL_COMPLAIN_VERBOSE
+
+        help
+	  Choose the default behaviour of WX Protection when no config
+	  rule matches or no rule is loaded.
+	  For further information on available flags and their meaning
+	  see Documentation/admin-guide/LSM/SARA.rst.
+
+	config SECURITY_SARA_WXPROT_DEFAULT_FLAGS_ALL_COMPLAIN_VERBOSE
+		bool "Protections enabled but not enforced."
+		help
+		  All features enabled except "Executable MMAP prevention",
+		  verbose reporting, but no actual enforce: it just complains.
+		  Its numeric value is 0x3f, for more information see
+		  Documentation/admin-guide/LSM/SARA.rst.
+
+        config SECURITY_SARA_WXPROT_DEFAULT_FLAGS_ALL_ENFORCE_VERBOSE
+		bool "Full protection, verbose."
+		help
+		  All features enabled except "Executable MMAP prevention".
+		  The enabled features will be enforced with verbose reporting.
+		  Its numeric value is 0x2f, for more information see
+		  Documentation/admin-guide/LSM/SARA.rst.
+
+        config SECURITY_SARA_WXPROT_DEFAULT_FLAGS_ALL_ENFORCE
+		bool "Full protection, quiet."
+		help
+		  All features enabled except "Executable MMAP prevention".
+		  The enabled features will be enforced quietly.
+		  Its numeric value is 0xf, for more information see
+		  Documentation/admin-guide/LSM/SARA.rst.
+
+	config SECURITY_SARA_WXPROT_DEFAULT_FLAGS_NONE
+		bool "No protection at all."
+		help
+		  All features disabled.
+		  Its numeric value is 0, for more information see
+		  Documentation/admin-guide/LSM/SARA.rst.
+endchoice
+
+config SECURITY_SARA_WXPROT_DISABLED
+	bool "WX protection will be disabled at boot."
+	depends on SECURITY_SARA_WXPROT
+	default n
+	help
+	  If you say Y here WX protection won't be enabled at startup. You can
+	  override this option via user-space utilities or at boot time via
+	  "sara.wxprot_enabled=[0|1]" kernel parameter.
+
+	  If unsure, answer N.
+
+config SECURITY_SARA_WXPROT_DEFAULT_FLAGS
+	hex
+	default "0x3f" if SECURITY_SARA_WXPROT_DEFAULT_FLAGS_ALL_COMPLAIN_VERBOSE
+	default "0x2f" if SECURITY_SARA_WXPROT_DEFAULT_FLAGS_ALL_ENFORCE_VERBOSE
+	default "0xf" if SECURITY_SARA_WXPROT_DEFAULT_FLAGS_ALL_ENFORCE
+	default "0" if SECURITY_SARA_WXPROT_DEFAULT_FLAGS_NONE
