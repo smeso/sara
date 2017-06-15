@@ -30,6 +30,7 @@
 #include "include/utils.h"
 #include "include/securityfs.h"
 #include "include/wxprot.h"
+#include "include/emutramp.h"
 
 #define SARA_WXPROT_CONFIG_VERSION 0
 
@@ -40,6 +41,7 @@
 #define SARA_WXP_COMPLAIN	0x0010
 #define SARA_WXP_VERBOSE	0x0020
 #define SARA_WXP_MMAP		0x0040
+#define SARA_WXP_EMUTRAMP	0x0100
 #define SARA_WXP_TRANSFER	0x0200
 #define SARA_WXP_NONE		0x0000
 #define SARA_WXP_MPROTECT	(SARA_WXP_HEAP	| \
@@ -50,7 +52,12 @@
 				 SARA_WXP_WXORX		| \
 				 SARA_WXP_COMPLAIN	| \
 				 SARA_WXP_VERBOSE)
+#ifdef CONFIG_SECURITY_SARA_WXPROT_EMUTRAMP
+#define SARA_WXP_ALL		(__SARA_WXP_ALL		| \
+				 SARA_WXP_EMUTRAMP)
+#else /* CONFIG_SECURITY_SARA_WXPROT_EMUTRAMP */
 #define SARA_WXP_ALL		__SARA_WXP_ALL
+#endif /* CONFIG_SECURITY_SARA_WXPROT_EMUTRAMP */
 
 struct wxprot_rule {
 	char *path;
@@ -75,7 +82,11 @@ static DEFINE_SPINLOCK(wxprot_config_lock);
 static u16 default_flags __ro_after_init =
 				CONFIG_SECURITY_SARA_WXPROT_DEFAULT_FLAGS;
 
+#ifdef CONFIG_SECURITY_SARA_WXPROT_EMUTRAMP
+static const bool wxprot_emutramp = true;
+#else
 static const bool wxprot_emutramp;
+#endif
 
 static void pr_wxp(char *msg)
 {
@@ -117,6 +128,9 @@ static bool are_flags_valid(u16 flags)
 		return false;
 	if (unlikely(flags & SARA_WXP_MMAP &&
 		     !(flags & SARA_WXP_OTHER)))
+		return false;
+	if (unlikely(flags & SARA_WXP_EMUTRAMP &&
+		     ((flags & SARA_WXP_MPROTECT) != SARA_WXP_MPROTECT)))
 		return false;
 	return true;
 }
@@ -530,11 +544,26 @@ static int sara_file_mprotect(struct vm_area_struct *vma,
 	return 0;
 }
 
+#ifdef CONFIG_SECURITY_SARA_WXPROT_EMUTRAMP
+static int sara_pagefault_handler(struct pt_regs *regs,
+				  unsigned long error_code,
+				  unsigned long address)
+{
+	if (!sara_enabled || !wxprot_enabled ||
+	    likely(!(get_current_sara_wxp_flags() & SARA_WXP_EMUTRAMP)))
+		return 0;
+	return sara_trampoline_emulator(regs, error_code, address);
+}
+#endif
+
 static struct security_hook_list wxprot_hooks[] __ro_after_init = {
 	LSM_HOOK_INIT(bprm_set_creds, sara_bprm_set_creds),
 	LSM_HOOK_INIT(check_vmflags, sara_check_vmflags),
 	LSM_HOOK_INIT(shm_shmat, sara_shm_shmat),
 	LSM_HOOK_INIT(file_mprotect, sara_file_mprotect),
+#ifdef CONFIG_SECURITY_SARA_WXPROT_EMUTRAMP
+	LSM_HOOK_INIT(pagefault_handler, sara_pagefault_handler),
+#endif
 };
 
 struct binary_config_header {
