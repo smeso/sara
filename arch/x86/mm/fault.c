@@ -16,6 +16,7 @@
 #include <linux/prefetch.h>		/* prefetchw			*/
 #include <linux/context_tracking.h>	/* exception_enter(), ...	*/
 #include <linux/uaccess.h>		/* faulthandler_disabled()	*/
+#include <linux/security.h>		/* security_pagefault_handler	*/
 
 #include <asm/cpufeature.h>		/* boot_cpu_has, ...		*/
 #include <asm/traps.h>			/* dotraplinkage, ...		*/
@@ -1305,6 +1306,11 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code,
 		if (regs->flags & X86_EFLAGS_IF)
 			local_irq_enable();
 	}
+
+	if (unlikely(security_pagefault_handler(regs,
+						error_code,
+						address)))
+		return;
 
 	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
 
