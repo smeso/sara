@@ -21,6 +21,9 @@ struct kern_ipc_perm {
 	umode_t		mode;
 	unsigned long	seq;
 	void		*security;
+#ifdef CONFIG_SECURITY_SARA
+	void		*security_sara;
+#endif
 
 	struct rhash_head khtnode;
 

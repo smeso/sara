@@ -142,6 +142,9 @@ struct cred {
 #ifdef CONFIG_SECURITY
 	void		*security;	/* subjective LSM security */
 #endif
+#ifdef CONFIG_SECURITY_SARA
+	void		*security_sara;
+#endif
 	struct user_struct *user;	/* real user ID subscription */
 	struct user_namespace *user_ns; /* user_ns the caps and keyrings are relative to. */
 	struct group_info *group_info;	/* supplementary groups for euid/fsgid */
