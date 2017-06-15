@@ -187,17 +187,8 @@ static const struct file_operations file_config_loader = {
 static int file_config_show(struct seq_file *seq, void *v)
 {
 	const struct sara_secfs_fptrs *fptrs = seq->private;
-	char *buf = NULL;
-	ssize_t ret;
 
-	ret = fptrs->dump(&buf);
-	if (unlikely(ret <= 0))
-		goto out;
-	seq_write(seq, buf, ret);
-	kvfree(buf);
-	ret = 0;
-out:
-	return ret;
+	return fptrs->dump(seq);
 }
 
 static int file_dumper_open(struct inode *inode, struct file *file)

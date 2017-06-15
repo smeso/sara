@@ -17,6 +17,7 @@
 #include <linux/cred.h>
 #include <linux/lsm_hooks.h>
 #include <linux/mm.h>
+#include <linux/spinlock.h>
 
 static int sara_cred_alloc_blank(struct cred *cred, gfp_t gfp)
 {
@@ -64,6 +65,7 @@ static int sara_shm_alloc_security(struct kern_ipc_perm *shp)
 	d = kzalloc(sizeof(*d), GFP_KERNEL);
 	if (d == NULL)
 		return -ENOMEM;
+	spin_lock_init(&d->lock);
 	get_sara_data_leftvalue(shp) = d;
 	return 0;
 }

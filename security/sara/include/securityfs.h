@@ -43,7 +43,7 @@ struct sara_secfs_node {
 
 struct sara_secfs_fptrs {
 	int (*const load)(const char *, size_t);
-	ssize_t (*const dump)(char **);
+	int (*const dump)(struct seq_file *);
 	int (*const hash)(char **);
 };
 
