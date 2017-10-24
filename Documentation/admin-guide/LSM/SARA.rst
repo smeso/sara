@@ -55,6 +55,8 @@ WX Protection. In particular:
 To extend the scope of the above features, despite the issues that they may
 cause, they are complemented by **/proc/PID/attr/sara/wxprot** interface
 and **trampoline emulation**.
+It's also possible to override the centralized configuration via `Extended
+filesystem attributes`_.
 
 At the moment, WX Protection (unless specified otherwise) should work on
 any architecture supporting the NX bit, including, but not limited to:
@@ -122,6 +124,24 @@ If you don't want it as a dependency, you can just statically link it
 in your project or copy/paste parts of it.
 To make things simpler `libsara` is the only part of S.A.R.A. released under
 *CC0 - No Rights Reserved* license.
+
+Extended filesystem attributes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+When this functionality is enabled, it's possible to override
+WX Protection flags set in the main configuration via extended attributes,
+even when S.A.R.A.'s configuration is in "locked" mode.
+If the user namespace is also enabled, its attributes will override settings
+configured via the security namespace.
+The xattrs currently in use are:
+
+- security.sara.wxprot
+- user.sara.wxprot
+
+They can be manually set to the desired value as a decimal, hexadecimal or
+octal number. When this functionality is enabled, S.A.R.A. can be easily used
+without the help of its userspace tools. Though the preferred way to change
+these attributes is `sara-xattr` which is part of `saractl` [2]_.
+
 
 Trampoline emulation
 ^^^^^^^^^^^^^^^^^^^^

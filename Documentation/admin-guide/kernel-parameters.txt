@@ -3935,6 +3935,22 @@
 			See S.A.R.A. documentation.
 			Default value is set via kernel config option.
 
+	sara.wxprot_xattrs_enabled= [SARA]
+			Enable support for security xattrs.
+			Format: { "0" | "1" }
+			See security/sara/Kconfig help text
+			0 -- disable.
+			1 -- enable.
+			Default value is set via kernel config option.
+
+	sara.wxprot_xattrs_user= [SARA]
+			Enable support for user xattrs.
+			Format: { "0" | "1" }
+			See security/sara/Kconfig help text
+			0 -- disable.
+			1 -- enable.
+			Default value is set via kernel config option.
+
 	serialnumber	[BUGS=X86-32]
 
 	shapers=	[NET]
