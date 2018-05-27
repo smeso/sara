@@ -22,8 +22,11 @@
 #include <linux/mm.h>
 #include <linux/mman.h>
 #include <linux/module.h>
+#include <linux/mount.h>
 #include <linux/printk.h>
 #include <linux/ratelimit.h>
+#include <linux/sched/mm.h>
+#include <linux/sched/task.h>
 #include <linux/spinlock.h>
 #include <linux/xattr.h>
 
@@ -631,6 +634,43 @@ static int sara_file_mprotect(struct vm_area_struct *vma,
 	return 0;
 }
 
+static int sara_file_open(struct file *file, const struct cred *cred)
+{
+	struct task_struct *t;
+	struct mm_struct *mm;
+	u16 sara_wxp_flags = get_current_sara_wxp_flags();
+
+	/*
+	 * Prevent write access to /proc/.../mem
+	 * if it operates on the mm_struct of the
+	 * current process: it could be used to
+	 * bypass W^X.
+	 */
+
+	if (!sara_enabled ||
+	    !wxprot_enabled ||
+	    !(sara_wxp_flags & SARA_WXP_WXORX) ||
+	    !(file->f_mode & FMODE_WRITE))
+		return 0;
+
+	t = get_sara_inode_task(file_inode(file));
+	if (unlikely(t != NULL &&
+		     strcmp(file->f_path.dentry->d_name.name,
+			    "mem") == 0)) {
+		get_task_struct(t);
+		mm = get_task_mm(t);
+		put_task_struct(t);
+		if (unlikely(mm == current->mm))
+			sara_warn_or_goto(error,
+					  "write access to /proc/*/mem");
+		mmput(mm);
+	}
+	return 0;
+error:
+	mmput(mm);
+	return -EACCES;
+}
+
 #ifdef CONFIG_SECURITY_SARA_WXPROT_EMUTRAMP
 static int sara_pagefault_handler(struct pt_regs *regs,
 				  unsigned long error_code,
@@ -794,6 +834,7 @@ static struct security_hook_list wxprot_hooks[] __ro_after_init = {
 	LSM_HOOK_INIT(check_vmflags, sara_check_vmflags),
 	LSM_HOOK_INIT(shm_shmat, sara_shm_shmat),
 	LSM_HOOK_INIT(file_mprotect, sara_file_mprotect),
+	LSM_HOOK_INIT(file_open, sara_file_open),
 #ifdef CONFIG_SECURITY_SARA_WXPROT_EMUTRAMP
 	LSM_HOOK_INIT(pagefault_handler, sara_pagefault_handler),
 #endif
