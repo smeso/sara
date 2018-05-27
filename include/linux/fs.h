@@ -589,6 +589,10 @@ struct inode {
 	void			*i_security;
 #endif
 
+#ifdef CONFIG_SECURITY_SARA
+	void			*security_sara;
+#endif
+
 	/* Stat data, not accessed from path walking */
 	unsigned long		i_ino;
 	/*
