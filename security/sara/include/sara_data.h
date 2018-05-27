@@ -14,6 +14,7 @@
 #ifndef __SARA_DATA_H
 #define __SARA_DATA_H
 
+#include <linux/fs.h>
 #include <linux/init.h>
 #include <linux/spinlock.h>
 
@@ -34,6 +35,10 @@ struct sara_shm_data {
 	bool		no_exec;
 	bool		no_write;
 	spinlock_t	lock;
+};
+
+struct sara_inode_data {
+	struct task_struct *task;
 };
 
 #define get_sara_data_leftvalue(X) ((X)->security_sara)
@@ -64,6 +69,9 @@ struct sara_shm_data {
 #define get_sara_shm_no_write(X) (get_sara_shm_data((X))->no_write)
 #define lock_sara_shm(X) (spin_lock(&get_sara_shm_data((X))->lock))
 #define unlock_sara_shm(X) (spin_unlock(&get_sara_shm_data((X))->lock))
+
+#define get_sara_inode_data(X) ((struct sara_inode_data *) (X)->security_sara)
+#define get_sara_inode_task(X) (get_sara_inode_data((X))->task)
 
 #endif
 
