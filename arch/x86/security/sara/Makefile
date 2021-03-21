@@ -1,0 +1,1 @@
+obj-$(CONFIG_SECURITY_SARA_WXPROT_EMUTRAMP) := emutramp.o
