@@ -15875,6 +15875,15 @@ F:	drivers/phy/samsung/phy-s5pv210-usb2.c
 F:	drivers/phy/samsung/phy-samsung-usb2.c
 F:	drivers/phy/samsung/phy-samsung-usb2.h
 
+SARA SECURITY MODULE
+M:	Salvatore Mesoraca <s.mesoraca16@gmail.com>
+S:	Maintained
+W:	https://sara.smeso.it
+T:	git git://github.com/smeso/sara.git lsm/sara/master
+F:	Documentation/admin-guide/LSM/SARA.rst
+F:	arch/x86/security/sara/
+F:	security/sara/
+
 SC1200 WDT DRIVER
 M:	Zwane Mwaikambo <zwanem@gmail.com>
 S:	Maintained
