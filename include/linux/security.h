@@ -386,6 +386,8 @@ int security_check_vmflags(vm_flags_t vmflags);
 int __maybe_unused security_pagefault_handler(struct pt_regs *regs,
 					      unsigned long error_code,
 					      unsigned long address);
+int security_set_denywrite(struct file *file, unsigned long prot,
+			   unsigned long flags);
 int security_file_lock(struct file *file, unsigned int cmd);
 int security_file_fcntl(struct file *file, unsigned int cmd, unsigned long arg);
 void security_file_set_fowner(struct file *file);
@@ -978,6 +980,13 @@ static inline int __maybe_unused security_pagefault_handler(
 						struct pt_regs *regs,
 						unsigned long error_code,
 						unsigned long address)
+{
+	return 0;
+}
+
+static inline int security_set_denywrite(struct file *file,
+					 unsigned long prot,
+					 unsigned long flags)
 {
 	return 0;
 }

@@ -88,6 +88,8 @@ LSM_HOOK(int, 0, check_vmflags, vm_flags_t vmflags)
 LSM_HOOK(int, 0, pagefault_handler, struct pt_regs *regs,
 	 unsigned long error_code,
 	 unsigned long address)
+LSM_HOOK(int, 0, set_denywrite, struct file *file, unsigned long prot,
+	 unsigned long flags)
 
 #ifdef CONFIG_SECURITY_PATH
 LSM_HOOK(int, 0, path_unlink, const struct path *dir, struct dentry *dentry)

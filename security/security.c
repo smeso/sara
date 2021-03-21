@@ -1572,6 +1572,12 @@ int __maybe_unused security_pagefault_handler(struct pt_regs *regs,
 			     address);
 }
 
+int security_set_denywrite(struct file *file, unsigned long prot,
+			   unsigned long flags)
+{
+	return call_int_hook(set_denywrite, 0, file, prot, flags);
+}
+
 int security_file_lock(struct file *file, unsigned int cmd)
 {
 	return call_int_hook(file_lock, 0, file, cmd);

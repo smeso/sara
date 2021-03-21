@@ -563,6 +563,17 @@
  *	@address contains the address that caused the pagefault.
  *	Return 0 to let the kernel handle the pagefault as usually, any other
  *	value to let the process continue its execution.
+ * @set_denywrite:
+ *	Forcefully add or remove MAP_DENYWRITE from a new file mmap.
+ *	MAP_DENYWRITE can be used for DoS. Fot this reason, by default,
+ *	the kernel always drop it. The only exception are the pages mapped
+ *	from the main executable.
+ *	This hook allow an LSM to re-enable this flag when it is safe to
+ *	do so.
+ *	@file contains the mmap'ed file structure.
+ *	@prot contains the requested memory protection.
+ *	@flags contains the requested flags.
+ *	Return 0 to unset MAP_DENYWRITE, any other value to set it.
  * @file_lock:
  *	Check permission before performing file locking operations.
  *	Note the hook mediates both flock and fcntl style locks.

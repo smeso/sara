@@ -1632,7 +1632,11 @@ unsigned long ksys_mmap_pgoff(unsigned long addr, unsigned long len,
 			return PTR_ERR(file);
 	}
 
-	flags &= ~(MAP_EXECUTABLE | MAP_DENYWRITE);
+	if (file && security_set_denywrite(file, prot, flags))
+		flags |= MAP_DENYWRITE;
+	else
+		flags &= ~MAP_DENYWRITE;
+	flags &= ~MAP_EXECUTABLE;
 
 	retval = vm_mmap_pgoff(file, addr, len, prot, flags, pgoff);
 out_fput:
