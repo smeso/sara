@@ -4,6 +4,7 @@
 #define __SARA_DATA_H
 
 #include <linux/cred.h>
+#include <linux/fs.h>
 #include <linux/init.h>
 #include <linux/lsm_hooks.h>
 #include <linux/spinlock.h>
@@ -27,6 +28,10 @@ struct sara_shm_data {
 	bool		no_exec;
 	bool		no_write;
 	spinlock_t	lock;
+};
+
+struct sara_inode_data {
+	bool is_proc_file;
 };
 
 
@@ -68,6 +73,17 @@ static inline struct sara_shm_data *get_sara_shm_data(
 #define lock_sara_shm(X) (spin_lock(&get_sara_shm_data((X))->lock))
 #define unlock_sara_shm(X) (spin_unlock(&get_sara_shm_data((X))->lock))
 
-#endif
+
+static inline struct sara_inode_data *get_sara_inode_data(
+						const struct inode *inode)
+{
+	if (unlikely(!inode->i_security))
+		return NULL;
+	return inode->i_security + sara_blob_sizes.lbs_inode;
+}
+
+#define get_sara_inode_is_proc_file(X) (get_sara_inode_data((X))->is_proc_file)
+
+#endif /* CONFIG_SECURITY_SARA_WXPROT */
 
 #endif /* __SARA_H */

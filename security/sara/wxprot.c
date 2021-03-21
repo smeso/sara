@@ -12,6 +12,7 @@
 #include <linux/mmap_lock.h>
 #include <linux/mman.h>
 #include <linux/module.h>
+#include <linux/mount.h>
 #include <linux/printk.h>
 #include <linux/ratelimit.h>
 #include <linux/spinlock.h>
@@ -604,6 +605,29 @@ static int sara_file_mprotect(struct vm_area_struct *vma,
 	return 0;
 }
 
+static int sara_file_open(struct file *file)
+{
+	u16 sara_wxp_flags;
+
+	if (!sara_enabled || !wxprot_enabled || !(file->f_mode & FMODE_WRITE))
+		return 0;
+
+	sara_wxp_flags = get_current_sara_wxp_flags();
+	if (!(sara_wxp_flags & SARA_WXP_WXORX))
+		return 0;
+
+	/*
+	 * Prevent write access to any /proc/.../mem
+	 * This could be used to bypass W^X.
+	 */
+	if (unlikely(get_sara_inode_is_proc_file(file_inode(file)) &&
+		     strcmp(file->f_path.dentry->d_iname, "mem") == 0) &&
+		     sara_violation("write access to /proc/*/mem"))
+		return -EACCES;
+
+	return 0;
+}
+
 #ifdef CONFIG_SECURITY_SARA_WXPROT_EMUTRAMP
 static int sara_pagefault_handler(struct pt_regs *regs,
 				  unsigned long error_code,
@@ -766,6 +790,7 @@ static struct security_hook_list wxprot_hooks[] __lsm_ro_after_init = {
 	LSM_HOOK_INIT(check_vmflags, sara_check_vmflags),
 	LSM_HOOK_INIT(shm_shmat, sara_shm_shmat),
 	LSM_HOOK_INIT(file_mprotect, sara_file_mprotect),
+	LSM_HOOK_INIT(file_open, sara_file_open),
 #ifdef CONFIG_SECURITY_SARA_WXPROT_EMUTRAMP
 	LSM_HOOK_INIT(pagefault_handler, sara_pagefault_handler),
 #endif

@@ -29,15 +29,22 @@ static int sara_shm_alloc_security(struct kern_ipc_perm *shp)
 	return 0;
 }
 
+static void sara_task_to_inode(struct task_struct *t, struct inode *i)
+{
+	get_sara_inode_is_proc_file(i) = true;
+}
+
 static struct security_hook_list data_hooks[] __lsm_ro_after_init = {
 	LSM_HOOK_INIT(cred_prepare, sara_cred_prepare),
 	LSM_HOOK_INIT(cred_transfer, sara_cred_transfer),
 	LSM_HOOK_INIT(shm_alloc_security, sara_shm_alloc_security),
+	LSM_HOOK_INIT(task_to_inode, sara_task_to_inode),
 };
 
 struct lsm_blob_sizes sara_blob_sizes __lsm_ro_after_init = {
 	.lbs_cred = sizeof(struct sara_data),
 	.lbs_ipc = sizeof(struct sara_shm_data),
+	.lbs_inode = sizeof(struct sara_inode_data),
 };
 
 void __init sara_data_init(void)
