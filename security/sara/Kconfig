@@ -1,0 +1,38 @@
+menuconfig SECURITY_SARA
+	bool "SARA"
+	depends on SECURITY
+	select SECURITYFS
+	help
+	  This selects SARA LSM which aims to collect heterogeneous
+	  security measures providing a common interface to manage them.
+	  This LSM will always be stacked with the selected primary LSM and
+	  other stacked LSMs.
+	  Further information can be found in
+	  Documentation/admin-guide/LSM/SARA.rst.
+
+	  If unsure, answer N.
+
+config SECURITY_SARA_DEFAULT_DISABLED
+	bool "SARA will be disabled at boot."
+	depends on SECURITY_SARA
+	help
+	  If you say Y here, SARA will not be enabled at startup. You can
+	  override this option at boot time via "sara.enabled=[1|0]" kernel
+	  parameter or via user-space utilities.
+	  This option is useful for distro kernels.
+
+	  If unsure, answer N.
+
+config SECURITY_SARA_NO_RUNTIME_ENABLE
+	bool "SARA can be turned on only at boot time."
+	depends on SECURITY_SARA_DEFAULT_DISABLED
+	default y
+	help
+	  By enabling this option it won't be possible to turn on SARA
+	  at runtime via user-space utilities. However it can still be
+	  turned on at boot time via the "sara.enabled=1" kernel parameter.
+	  This option is functionally equivalent to "sara.enabled=0" kernel
+	  parameter. This option is useful for distro kernels.
+
+	  If unsure, answer Y.
+
