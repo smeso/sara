@@ -84,6 +84,7 @@ LSM_HOOK(int, 0, dentry_init_security, struct dentry *dentry,
 	 int mode, const struct qstr *name, void **ctx, u32 *ctxlen)
 LSM_HOOK(int, 0, dentry_create_files_as, struct dentry *dentry, int mode,
 	 struct qstr *name, const struct cred *old, struct cred *new)
+LSM_HOOK(int, 0, check_vmflags, vm_flags_t vmflags)
 
 #ifdef CONFIG_SECURITY_PATH
 LSM_HOOK(int, 0, path_unlink, const struct path *dir, struct dentry *dentry)

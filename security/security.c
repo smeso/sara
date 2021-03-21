@@ -1556,6 +1556,11 @@ int security_file_mprotect(struct vm_area_struct *vma, unsigned long reqprot,
 	return ima_file_mprotect(vma, prot);
 }
 
+int security_check_vmflags(vm_flags_t vmflags)
+{
+	return call_int_hook(check_vmflags, 0, vmflags);
+}
+
 int security_file_lock(struct file *file, unsigned int cmd)
 {
 	return call_int_hook(file_lock, 0, file, cmd);
