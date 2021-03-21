@@ -605,6 +605,99 @@ static int sara_file_mprotect(struct vm_area_struct *vma,
 	return 0;
 }
 
+static const struct cred *sara_override_creds(kuid_t uid, kgid_t gid)
+{
+	const struct cred *old_cred;
+	struct cred *override_cred;
+
+	override_cred = prepare_creds();
+	if (!override_cred)
+		return NULL;
+
+	if (!uid_eq(uid, INVALID_UID))
+		override_cred->fsuid = uid;
+	if (!gid_eq(gid, INVALID_GID))
+		override_cred->fsgid = gid;
+
+	/*
+	 * Similarly to what happens in access(), the new creds
+	 * will only be used temporarily by the current task.
+	 */
+	override_cred->non_rcu = 1;
+
+	old_cred = override_creds(override_cred);
+	put_cred(override_cred);
+
+	return old_cred;
+}
+
+static bool sara_may_write(struct file *file)
+{
+	bool ret = false;
+	const struct cred *old_cred;
+
+	if (inode_permission(file_mnt_user_ns(file), file_inode(file), MAY_WRITE) == 0)
+		return true;
+
+	if (unlikely(!uid_eq(current_fsuid(), current_suid()))) {
+		old_cred = sara_override_creds(current_suid(), INVALID_GID);
+		if (inode_permission(file_mnt_user_ns(file),
+				     file_inode(file), MAY_WRITE) == 0)
+			ret = true;
+		revert_creds(old_cred);
+		if (ret)
+			return true;
+	}
+
+	if (unlikely(!uid_eq(current_fsuid(), current_uid()))) {
+		old_cred = sara_override_creds(current_uid(), INVALID_GID);
+		if (inode_permission(file_mnt_user_ns(file),
+				     file_inode(file), MAY_WRITE) == 0)
+			ret = true;
+		revert_creds(old_cred);
+		if (ret)
+			return true;
+	}
+
+	if (unlikely(!in_group_p(current_sgid()))) {
+		old_cred = sara_override_creds(INVALID_UID, current_sgid());
+		if (inode_permission(file_mnt_user_ns(file),
+				     file_inode(file), MAY_WRITE) == 0)
+			ret = true;
+		revert_creds(old_cred);
+		if (ret)
+			return true;
+	}
+
+	if (unlikely(!in_group_p(current_gid()))) {
+		old_cred = sara_override_creds(INVALID_UID, current_gid());
+		if (inode_permission(file_mnt_user_ns(file),
+				     file_inode(file), MAY_WRITE) == 0)
+			ret = true;
+		revert_creds(old_cred);
+	}
+
+	return ret;
+}
+
+static int sara_set_denywrite(struct file *file, unsigned long prot, unsigned long flags)
+{
+	u16 sara_wxp_flags;
+
+	if (!sara_enabled ||
+	    !wxprot_enabled ||
+	    !(prot & PROT_EXEC || flags & MAP_DENYWRITE))
+		return 0;
+
+	sara_wxp_flags = get_current_sara_wxp_flags();
+
+	if(sara_wxp_flags & SARA_WXP_WXORX &&
+	   !(sara_wxp_flags & SARA_WXP_COMPLAIN) &&
+	   unlikely(sara_may_write(file)))
+		return 1;
+	return 0;
+}
+
 static int sara_file_open(struct file *file)
 {
 	u16 sara_wxp_flags;
@@ -791,6 +884,7 @@ static struct security_hook_list wxprot_hooks[] __lsm_ro_after_init = {
 	LSM_HOOK_INIT(shm_shmat, sara_shm_shmat),
 	LSM_HOOK_INIT(file_mprotect, sara_file_mprotect),
 	LSM_HOOK_INIT(file_open, sara_file_open),
+	LSM_HOOK_INIT(set_denywrite, sara_set_denywrite),
 #ifdef CONFIG_SECURITY_SARA_WXPROT_EMUTRAMP
 	LSM_HOOK_INIT(pagefault_handler, sara_pagefault_handler),
 #endif
