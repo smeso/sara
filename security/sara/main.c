@@ -7,6 +7,7 @@
 #include <linux/printk.h>
 
 #include "include/sara.h"
+#include "include/sara_data.h"
 #include "include/securityfs.h"
 
 static const int sara_version = SARA_VERSION;
@@ -82,6 +83,8 @@ static int __init sara_init(void)
 		goto error;
 	}
 
+	sara_data_init();
+
 	pr_debug("initialized.\n");
 
 	if (sara_enabled)
@@ -101,4 +104,5 @@ DEFINE_LSM(sara) = {
 	.name = "sara",
 	.enabled = &sara_enabled,
 	.init = sara_init,
+	.blobs = &sara_blob_sizes,
 };
