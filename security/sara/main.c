@@ -6,6 +6,7 @@
 #include <linux/module.h>
 #include <linux/printk.h>
 
+#include "include/dfa_test.h"
 #include "include/sara.h"
 #include "include/sara_data.h"
 #include "include/securityfs.h"
@@ -84,6 +85,11 @@ static int __init sara_init(void)
 	}
 
 	sara_data_init();
+
+	if (sara_dfa_test_init()) {
+		pr_crit("impossible to initialize DFA test interface.\n");
+		goto error;
+	}
 
 	pr_debug("initialized.\n");
 

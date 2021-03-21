@@ -12,6 +12,26 @@ menuconfig SECURITY_SARA
 
 	  If unsure, answer N.
 
+config SECURITY_SARA_DFA_32BIT
+	bool "Use 32 bits instead of 16 bits for DFA states' id"
+	depends on SECURITY_SARA
+	help
+	  If you say Y here SARA will use more memory, but you will be
+	  able to configure more rules.
+	  See Documentation/admin-guide/LSM/SARA.rst. for further information.
+
+	  If unsure, answer N.
+
+config SECURITY_SARA_DFA_TEST
+	bool "Enable test interface for the internal DFA engine"
+	depends on SECURITY_SARA
+	help
+	  If you say Y here SARA will enable a user-space interface
+	  that can be used to test the DFA engine (e.g. via `saractl test`).
+	  See Documentation/admin-guide/LSM/SARA.rst. for further information.
+
+	  If unsure, answer N.
+
 config SECURITY_SARA_DEFAULT_DISABLED
 	bool "SARA will be disabled at boot."
 	depends on SECURITY_SARA
