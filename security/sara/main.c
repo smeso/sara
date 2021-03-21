@@ -10,6 +10,7 @@
 #include "include/sara.h"
 #include "include/sara_data.h"
 #include "include/securityfs.h"
+#include "include/wxprot.h"
 
 static const int sara_version = SARA_VERSION;
 
@@ -88,6 +89,11 @@ static int __init sara_init(void)
 
 	if (sara_dfa_test_init()) {
 		pr_crit("impossible to initialize DFA test interface.\n");
+		goto error;
+	}
+
+	if (sara_wxprot_init()) {
+		pr_crit("impossible to initialize WX protections.\n");
 		goto error;
 	}
 
