@@ -15,6 +15,7 @@
 #include <linux/printk.h>
 #include <linux/ratelimit.h>
 #include <linux/spinlock.h>
+#include <linux/xattr.h>
 
 #include "include/dfa.h"
 #include "include/sara.h"
@@ -72,6 +73,18 @@ static const bool wxprot_emutramp = true;
 static const bool wxprot_emutramp;
 #endif
 
+#ifdef CONFIG_SECURITY_SARA_WXPROT_XATTRS_ENABLED
+static int wxprot_xattrs_enabled __read_mostly = true;
+#else
+static int wxprot_xattrs_enabled __read_mostly;
+#endif
+
+#ifdef CONFIG_SECURITY_SARA_WXPROT_XATTRS_USER
+static int wxprot_xattrs_user __read_mostly = true;
+#else
+static int wxprot_xattrs_user __read_mostly;
+#endif
+
 static void pr_wxp(char *msg)
 {
 	char *buf, *path;
@@ -122,6 +135,14 @@ static bool are_flags_valid(u16 flags)
 module_param(wxprot_enabled, int, 0);
 MODULE_PARM_DESC(wxprot_enabled,
 		 "Disable or enable SARA WX Protection at boot time.");
+
+module_param(wxprot_xattrs_enabled, int, 0);
+MODULE_PARM_DESC(wxprot_xattrs_enabled,
+		 "Disable or enable SARA WXP extended attributes interfaces.");
+
+module_param(wxprot_xattrs_user, int, 0);
+MODULE_PARM_DESC(wxprot_xattrs_user,
+		 "Allow normal users to override SARA WXP settings via extended attributes.");
 
 static int param_set_wxpflags(const char *val, const struct kernel_param *kp)
 {
@@ -231,6 +252,63 @@ static inline int is_relro_page(const struct vm_area_struct *vma)
 }
 
 /*
+ * Extended attributes handling
+ */
+static int sara_wxprot_xattrs_name(struct dentry *d,
+				   const char *name,
+				   u16 *flags)
+{
+	int rc;
+	char buffer[10];
+	u16 tmp;
+
+	if (!(d->d_inode->i_opflags & IOP_XATTR))
+		return -EOPNOTSUPP;
+
+	rc = __vfs_getxattr(d, d->d_inode, name, buffer, sizeof(buffer) - 1);
+	if (rc > 0) {
+		buffer[rc] = '\0';
+		rc = kstrtou16(buffer, 0, &tmp);
+		if (rc)
+			return rc;
+		if (!are_flags_valid(tmp))
+			return -EINVAL;
+		*flags = tmp;
+		return 0;
+	} else if (rc < 0)
+		return rc;
+
+	return -ENODATA;
+}
+
+static inline int sara_wxprot_xattrs(struct dentry *d,
+				     u16 *flags)
+{
+	int rc;
+
+	if (!wxprot_xattrs_enabled)
+		return 1;
+	if (wxprot_xattrs_user) {
+		rc = sara_wxprot_xattrs_name(d, XATTR_NAME_USR_SARA_WXP,
+					     flags);
+		if (rc == -EINVAL || rc == -ERANGE)
+			pr_info_ratelimited(
+				"WXP: malformed xattr '%s' on '%s'\n",
+				XATTR_NAME_USR_SARA_WXP,
+				d->d_name.name);
+		else if (rc == 0)
+			return 0;
+	}
+	rc = sara_wxprot_xattrs_name(d, XATTR_NAME_SEC_SARA_WXP, flags);
+	if (rc == -EINVAL || rc == -ERANGE)
+		pr_info_ratelimited("WXP: malformed xattr '%s' on '%s'\n",
+				    XATTR_NAME_SEC_SARA_WXP,
+				    d->d_name.name);
+	return rc;
+}
+
+
+/*
  * LSM hooks
  */
 static int sara_bprm_creds_for_exec(struct linux_binprm *bprm)
@@ -253,6 +331,10 @@ static int sara_bprm_creds_for_exec(struct linux_binprm *bprm)
 
 	if (!sara_enabled || !wxprot_enabled)
 		return 0;
+
+	if (sara_wxprot_xattrs(bprm->file->f_path.dentry,
+			       &sara_wxp_flags) == 0)
+		goto flags_set;
 
 	/*
 	 * SARA_WXP_TRANSFER means that the parent
@@ -278,6 +360,7 @@ static int sara_bprm_creds_for_exec(struct linux_binprm *bprm)
 	} else
 		path = (char *) bprm->interp;
 
+flags_set:
 	if (sara_wxp_flags != default_flags &&
 	    sara_wxp_flags & SARA_WXP_VERBOSE)
 		pr_debug_ratelimited("WXP: '%s' run with flags '0x%x'.\n",
@@ -767,6 +850,10 @@ out:
 
 static DEFINE_SARA_SECFS_BOOL_FLAG(wxprot_enabled_data,
 				   wxprot_enabled);
+static DEFINE_SARA_SECFS_BOOL_FLAG(wxprot_xattrs_enabled_data,
+				   wxprot_xattrs_enabled);
+static DEFINE_SARA_SECFS_BOOL_FLAG(wxprot_xattrs_user_data,
+				   wxprot_xattrs_user);
 
 static struct sara_secfs_fptrs fptrs __lsm_ro_after_init = {
 	.load = config_load,
@@ -809,6 +896,16 @@ static const struct sara_secfs_node wxprot_fs[] __initconst = {
 		.name = "hash",
 		.type = SARA_SECFS_CONFIG_HASH,
 		.data = &fptrs,
+	},
+	{
+		.name = "xattr_enabled",
+		.type = SARA_SECFS_BOOL,
+		.data = (void *) &wxprot_xattrs_enabled_data,
+	},
+	{
+		.name = "xattr_user_allowed",
+		.type = SARA_SECFS_BOOL,
+		.data = (void *) &wxprot_xattrs_user_data,
 	},
 };
 
