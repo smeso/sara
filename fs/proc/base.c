@@ -2800,6 +2800,13 @@ static const struct pid_entry apparmor_attr_dir_stuff[] = {
 LSM_DIR_OPS(apparmor);
 #endif
 
+#ifdef CONFIG_SECURITY_SARA
+static const struct pid_entry sara_attr_dir_stuff[] = {
+	ATTR("sara", "wxprot", 0666),
+};
+LSM_DIR_OPS(sara);
+#endif
+
 static const struct pid_entry attr_dir_stuff[] = {
 	ATTR(NULL, "current",		0666),
 	ATTR(NULL, "prev",		0444),
@@ -2814,6 +2821,10 @@ static const struct pid_entry attr_dir_stuff[] = {
 #ifdef CONFIG_SECURITY_APPARMOR
 	DIR("apparmor",			0555,
 	    proc_apparmor_attr_dir_inode_ops, proc_apparmor_attr_dir_ops),
+#endif
+#ifdef CONFIG_SECURITY_SARA
+	DIR("sara",			0555,
+	    proc_sara_attr_dir_inode_ops, proc_sara_attr_dir_ops),
 #endif
 };
 
