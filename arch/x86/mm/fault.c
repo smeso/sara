@@ -19,6 +19,7 @@
 #include <linux/uaccess.h>		/* faulthandler_disabled()	*/
 #include <linux/efi.h>			/* efi_crash_gracefully_on_page_fault()*/
 #include <linux/mm_types.h>
+#include <linux/security.h>		/* security_pagefault_handler	*/
 
 #include <asm/cpufeature.h>		/* boot_cpu_has, ...		*/
 #include <asm/traps.h>			/* dotraplinkage, ...		*/
@@ -1290,6 +1291,11 @@ void do_user_addr_fault(struct pt_regs *regs,
 		if (regs->flags & X86_EFLAGS_IF)
 			local_irq_enable();
 	}
+
+	if (unlikely(security_pagefault_handler(regs,
+						error_code,
+						address)))
+		return;
 
 	perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS, 1, regs, address);
 
